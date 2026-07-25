@@ -1,0 +1,122 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Domains\Product\Actions\CreateProductAction;
+use App\Domains\Product\Actions\DeleteProductAction;
+use App\Domains\Product\Actions\UpdateProductAction;
+use App\Domains\Product\DTOs\CreateProductDTO;
+use App\Domains\Product\DTOs\UpdateProductDTO;
+use App\Domains\Product\Models\Product;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Product\CreateProductRequest;
+use App\Http\Requests\Admin\Product\UpdateProductRequest;
+use App\Http\Resources\Admin\ProductResource;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+
+class ProductController extends Controller
+{
+    public function __construct(
+        private readonly CreateProductAction $createProduct,
+        private readonly UpdateProductAction $updateProduct,
+        private readonly DeleteProductAction $deleteProduct,
+    ) {}
+
+    /**
+     * GET /api/v1/admin/products
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $this->authorize('manage_products');
+
+        $products = Product::with(['coverImage', 'creator'])
+            ->ordered()
+            ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
+            ->when($request->query('search'), fn ($q, $search) =>
+                $q->where('name_en', 'ilike', "%{$search}%")
+                  ->orWhere('name_ar', 'ilike', "%{$search}%")
+                  ->orWhere('slug', 'ilike', "%{$search}%")
+            )
+            ->paginate($request->query('per_page', 15));
+
+        return response()->json([
+            'success' => true,
+            'data'    => ProductResource::collection($products),
+            'meta'    => [
+                'current_page' => $products->currentPage(),
+                'last_page'    => $products->lastPage(),
+                'per_page'     => $products->perPage(),
+                'total'        => $products->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * POST /api/v1/admin/products
+     */
+    public function store(CreateProductRequest $request): JsonResponse
+    {
+        $this->authorize('manage_products');
+
+        $product = $this->createProduct->execute(
+            CreateProductDTO::fromRequest($request)
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product created successfully.',
+            'data'    => new ProductResource($product->load('coverImage')),
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * GET /api/v1/admin/products/{product}
+     */
+    public function show(Product $product): JsonResponse
+    {
+        $this->authorize('manage_products');
+
+        return response()->json([
+            'success' => true,
+            'data'    => new ProductResource(
+                $product->load(['coverImage', 'releases', 'creator'])
+            ),
+        ]);
+    }
+
+    /**
+     * PUT /api/v1/admin/products/{product}
+     */
+    public function update(UpdateProductRequest $request, Product $product): JsonResponse
+    {
+        $this->authorize('manage_products');
+
+        $updated = $this->updateProduct->execute(
+            $product,
+            UpdateProductDTO::fromArray($request->validated())
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product updated successfully.',
+            'data'    => new ProductResource($updated->load('coverImage')),
+        ]);
+    }
+
+    /**
+     * DELETE /api/v1/admin/products/{product}
+     */
+    public function destroy(Product $product): JsonResponse
+    {
+        $this->authorize('manage_products');
+
+        $this->deleteProduct->execute($product);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product deleted successfully.',
+        ]);
+    }
+}
