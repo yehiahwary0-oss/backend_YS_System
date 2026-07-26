@@ -22,7 +22,11 @@ class ActionTest extends TestCase
     public function test_reading_time_is_calculated_from_word_count(): void
     {
         // 200 words = 1 minute, 400 words = 2 minutes
-        $action = new CreateDocumentationArticleAction();
+        // Resolved via the container (not `new`) because this Action now
+        // depends on HtmlSanitizerService — letting Laravel wire it up is
+        // the standard pattern and keeps this test from having to know
+        // about dependencies it isn't actually testing.
+        $action = $this->app->make(CreateDocumentationArticleAction::class);
 
         // estimateReadingTime() is public — testable directly, no reflection needed
         $this->assertEquals(1, $action->estimateReadingTime(implode(' ', array_fill(0, 150, 'word'))));

@@ -2,6 +2,8 @@
 
 namespace App\Domains\Product\DTOs;
 
+use App\Domains\System\Services\HtmlSanitizerService;
+
 readonly class UpdateProductDTO
 {
     public function __construct(
@@ -21,6 +23,8 @@ readonly class UpdateProductDTO
 
     public static function fromArray(array $validated): self
     {
+        $sanitizer = app(HtmlSanitizerService::class);
+
         return new self(
             slug:         $validated['slug'] ?? null,
             nameEn:       $validated['name_en'] ?? null,
@@ -28,8 +32,8 @@ readonly class UpdateProductDTO
             status:       $validated['status'] ?? null,
             shortDescEn:  $validated['short_desc_en'] ?? null,
             shortDescAr:  $validated['short_desc_ar'] ?? null,
-            longDescEn:   $validated['long_desc_en'] ?? null,
-            longDescAr:   $validated['long_desc_ar'] ?? null,
+            longDescEn:   $sanitizer->sanitize($validated['long_desc_en'] ?? null),
+            longDescAr:   $sanitizer->sanitize($validated['long_desc_ar'] ?? null),
             coverImageId: $validated['cover_image_id'] ?? null,
             isFeatured:   isset($validated['is_featured']) ? (bool) $validated['is_featured'] : null,
             sortOrder:    isset($validated['sort_order']) ? (int) $validated['sort_order'] : null,

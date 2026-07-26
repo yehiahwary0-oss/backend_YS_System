@@ -2,6 +2,7 @@
 
 namespace App\Domains\Product\DTOs;
 
+use App\Domains\System\Services\HtmlSanitizerService;
 use App\Http\Requests\Admin\Product\CreateProductRequest;
 use App\Http\Requests\Admin\Product\UpdateProductRequest;
 
@@ -25,6 +26,7 @@ readonly class CreateProductDTO
     public static function fromRequest(CreateProductRequest $request): self
     {
         $v = $request->validated();
+        $sanitizer = app(HtmlSanitizerService::class);
 
         return new self(
             slug:         $v['slug'],
@@ -33,8 +35,11 @@ readonly class CreateProductDTO
             status:       $v['status'] ?? 'planned',
             shortDescEn:  $v['short_desc_en'] ?? null,
             shortDescAr:  $v['short_desc_ar'] ?? null,
-            longDescEn:   $v['long_desc_en'] ?? null,
-            longDescAr:   $v['long_desc_ar'] ?? null,
+            // long_desc is rich-text HTML from the admin editor — sanitize
+            // here, once, so every consumer of this DTO downstream never
+            // has to think about it again.
+            longDescEn:   $sanitizer->sanitize($v['long_desc_en'] ?? null),
+            longDescAr:   $sanitizer->sanitize($v['long_desc_ar'] ?? null),
             coverImageId: $v['cover_image_id'] ?? null,
             isFeatured:   (bool) ($v['is_featured'] ?? false),
             sortOrder:    (int) ($v['sort_order'] ?? 0),
