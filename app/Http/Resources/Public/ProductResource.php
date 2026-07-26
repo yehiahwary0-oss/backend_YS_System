@@ -23,6 +23,8 @@ class ProductResource extends JsonResource
             'status'          => $this->status,
             'current_version' => $this->current_version,
             'is_featured'     => $this->is_featured,
+            'icon_key'        => $this->icon_key,
+            'brand_color'     => $this->brand_color,
             'cover_image'     => $this->whenLoaded('coverImage', fn () => [
                 'url' => $this->coverImage->url,
                 'alt' => $locale === 'ar'

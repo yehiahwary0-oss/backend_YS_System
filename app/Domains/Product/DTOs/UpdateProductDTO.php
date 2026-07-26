@@ -16,6 +16,8 @@ readonly class UpdateProductDTO
         public ?string $longDescEn,
         public ?string $longDescAr,
         public ?string $coverImageId,
+        public ?string $iconKey,
+        public ?string $brandColor,
         public ?bool   $isFeatured,
         public ?int    $sortOrder,
         public ?array  $seoMeta,
@@ -35,6 +37,8 @@ readonly class UpdateProductDTO
             longDescEn:   $sanitizer->sanitize($validated['long_desc_en'] ?? null),
             longDescAr:   $sanitizer->sanitize($validated['long_desc_ar'] ?? null),
             coverImageId: $validated['cover_image_id'] ?? null,
+            iconKey:      $validated['icon_key'] ?? null,
+            brandColor:   $validated['brand_color'] ?? null,
             isFeatured:   isset($validated['is_featured']) ? (bool) $validated['is_featured'] : null,
             sortOrder:    isset($validated['sort_order']) ? (int) $validated['sort_order'] : null,
             seoMeta:      $validated['seo_meta'] ?? null,
@@ -57,6 +61,8 @@ readonly class UpdateProductDTO
         if ($this->longDescEn !== null)   $data['long_desc_en']   = $this->longDescEn;
         if ($this->longDescAr !== null)   $data['long_desc_ar']   = $this->longDescAr;
         if ($this->coverImageId !== null) $data['cover_image_id'] = $this->coverImageId;
+        if ($this->iconKey !== null)      $data['icon_key']       = $this->iconKey;
+        if ($this->brandColor !== null)   $data['brand_color']    = $this->brandColor;
         if ($this->isFeatured !== null)   $data['is_featured']    = $this->isFeatured;
         if ($this->sortOrder !== null)    $data['sort_order']     = $this->sortOrder;
         if ($this->seoMeta !== null)      $data['seo_meta']       = $this->seoMeta;

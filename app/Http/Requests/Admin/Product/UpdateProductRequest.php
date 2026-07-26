@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Product;
 
+use App\Domains\Product\Enums\ProductIcon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,6 +27,8 @@ class UpdateProductRequest extends FormRequest
             'long_desc_en'   => ['nullable', 'string'],
             'long_desc_ar'   => ['nullable', 'string'],
             'cover_image_id' => ['nullable', 'uuid', 'exists:media,id'],
+            'icon_key'       => ['nullable', 'string', Rule::in(ProductIcon::values())],
+            'brand_color'    => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'is_featured'    => ['sometimes', 'boolean'],
             'sort_order'     => ['sometimes', 'integer', 'min:0', 'max:9999'],
             'seo_meta'               => ['nullable', 'array'],

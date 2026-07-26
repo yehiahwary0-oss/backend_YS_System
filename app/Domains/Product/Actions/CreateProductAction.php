@@ -28,6 +28,8 @@ class CreateProductAction
             'long_desc_en'   => $dto->longDescEn,
             'long_desc_ar'   => $dto->longDescAr,
             'cover_image_id' => $dto->coverImageId,
+            'icon_key'       => $dto->iconKey,
+            'brand_color'    => $dto->brandColor,
             'is_featured'    => $dto->isFeatured,
             'sort_order'     => $dto->sortOrder,
             'seo_meta'       => $dto->seoMeta,

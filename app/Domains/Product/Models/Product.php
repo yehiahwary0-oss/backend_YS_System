@@ -26,6 +26,8 @@ class Product extends Model
         'status',
         'current_version',
         'cover_image_id',
+        'icon_key',
+        'brand_color',
         'is_featured',
         'sort_order',
         'seo_meta',
@@ -74,7 +76,7 @@ class Product extends Model
 
     public function scopePublic($query)
     {
-        return $query->whereIn('status', ['active', 'beta']);
+        return $query->whereIn('status', ['active', 'beta', 'planned']);
     }
 
     public function scopeFeatured($query)

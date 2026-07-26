@@ -21,6 +21,8 @@ class ProductResource extends JsonResource
             'status'          => $this->status,
             'current_version' => $this->current_version,
             'is_featured'     => $this->is_featured,
+            'icon_key'        => $this->icon_key,
+            'brand_color'     => $this->brand_color,
             'sort_order'      => $this->sort_order,
             'seo_meta'        => $this->seo_meta,
             'cover_image'     => $this->whenLoaded('coverImage', fn () => [
