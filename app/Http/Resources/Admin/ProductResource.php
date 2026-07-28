@@ -25,16 +25,22 @@ class ProductResource extends JsonResource
             'brand_color'     => $this->brand_color,
             'sort_order'      => $this->sort_order,
             'seo_meta'        => $this->seo_meta,
-            'cover_image'     => $this->whenLoaded('coverImage', fn () => [
+            // Same fix as Public\ProductResource: whenLoaded() confirms the
+            // relation was queried, not that the related row exists.
+            'cover_image'     => $this->whenLoaded('coverImage', fn () => $this->coverImage ? [
                 'id'  => $this->coverImage->id,
                 'url' => $this->coverImage->url,
                 'alt' => $this->coverImage->alt_text_en,
-            ]),
+            ] : null),
             'releases_count'  => $this->whenLoaded('releases', fn () => $this->releases->count()),
-            'creator'         => $this->whenLoaded('creator', fn () => [
+            // created_by is nullable with ->nullOnDelete() (see products
+            // migration) — if the creating admin's account is later
+            // deleted, this legitimately becomes null, not just "not
+            // loaded". Same crash risk as cover_image above.
+            'creator'         => $this->whenLoaded('creator', fn () => $this->creator ? [
                 'id'   => $this->creator->id,
                 'name' => $this->creator->name,
-            ]),
+            ] : null),
             'created_at'      => $this->created_at->toIso8601String(),
             'updated_at'      => $this->updated_at->toIso8601String(),
             'deleted_at'      => $this->deleted_at?->toIso8601String(),

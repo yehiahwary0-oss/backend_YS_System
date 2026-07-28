@@ -25,12 +25,19 @@ class ProductResource extends JsonResource
             'is_featured'     => $this->is_featured,
             'icon_key'        => $this->icon_key,
             'brand_color'     => $this->brand_color,
-            'cover_image'     => $this->whenLoaded('coverImage', fn () => [
+            // NOTE: whenLoaded() only checks that the relation was QUERIED
+            // (via with('coverImage') in the controller), not that a
+            // related row actually exists. Most products won't have a
+            // cover image set — $this->coverImage is null for those, and
+            // the old version of this closure crashed with a fatal error
+            // trying to read ->url off of null. The null check here is
+            // load-bearing, not decorative.
+            'cover_image' => $this->whenLoaded('coverImage', fn () => $this->coverImage ? [
                 'url' => $this->coverImage->url,
                 'alt' => $locale === 'ar'
                     ? $this->coverImage->alt_text_ar
                     : $this->coverImage->alt_text_en,
-            ]),
+            ] : null),
         ];
     }
 }

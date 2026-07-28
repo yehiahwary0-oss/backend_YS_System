@@ -18,10 +18,10 @@ class StaticPageResource extends JsonResource
             'excerpt'     => $locale === 'ar' ? $this->excerpt_ar : $this->excerpt_en,
             'content'     => $locale === 'ar' ? $this->content_ar : $this->content_en,
             'published_at'=> $this->published_at?->toIso8601String(),
-            'cover_image' => $this->whenLoaded('cover', fn () => [
+            'cover_image' => $this->whenLoaded('cover', fn () => $this->cover ? [
                 'url' => $this->cover->url,
                 'alt' => $locale === 'ar' ? $this->cover->alt_text_ar : $this->cover->alt_text_en,
-            ]),
+            ] : null),
         ];
     }
 }

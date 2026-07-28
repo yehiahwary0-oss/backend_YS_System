@@ -19,12 +19,12 @@ class ProductDetailResource extends JsonResource
             'long_desc'       => $locale === 'ar' ? $this->long_desc_ar : $this->long_desc_en,
             'status'          => $this->status,
             'current_version' => $this->current_version,
-            'cover_image'     => $this->whenLoaded('coverImage', fn () => [
+            'cover_image'     => $this->whenLoaded('coverImage', fn () => $this->coverImage ? [
                 'url' => $this->coverImage->url,
                 'alt' => $locale === 'ar'
                     ? $this->coverImage->alt_text_ar
                     : $this->coverImage->alt_text_en,
-            ]),
+            ] : null),
             'latest_release'  => $this->whenLoaded('latestRelease', function () use ($locale) {
                 $release = $this->latestRelease->first();
                 if (! $release) return null;
