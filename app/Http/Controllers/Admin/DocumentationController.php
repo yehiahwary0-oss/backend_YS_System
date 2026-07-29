@@ -10,6 +10,8 @@ use App\Domains\Content\Models\DocumentationArticle;
 use App\Domains\Content\Models\DocumentationCategory;
 use App\Domains\System\Services\AuditService;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Admin\DocumentationArticleResource;
+use App\Http\Resources\Admin\DocumentationCategoryResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -36,7 +38,7 @@ class DocumentationController extends Controller
             ->ordered()
             ->get();
 
-        return response()->json(['success' => true, 'data' => $categories]);
+        return response()->json(['success' => true, 'data' => DocumentationCategoryResource::collection($categories)]);
     }
 
     public function storeCategory(Request $request): JsonResponse
@@ -59,7 +61,7 @@ class DocumentationController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Category created successfully.',
-            'data'    => $category,
+            'data'    => new DocumentationCategoryResource($category->load(['product', 'parent'])),
         ], Response::HTTP_CREATED);
     }
 
@@ -84,7 +86,7 @@ class DocumentationController extends Controller
 
         $this->auditService->logModelChange('documentation_category.updated', $updated);
 
-        return response()->json(['success' => true, 'data' => $updated]);
+        return response()->json(['success' => true, 'data' => new DocumentationCategoryResource($updated->load(['product', 'parent']))]);
     }
 
     public function destroyCategory(DocumentationCategory $category): JsonResponse
@@ -119,7 +121,7 @@ class DocumentationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $articles->items(),
+            'data'    => DocumentationArticleResource::collection($articles->items()),
             'meta'    => [
                 'current_page' => $articles->currentPage(),
                 'last_page'    => $articles->lastPage(),
@@ -151,7 +153,7 @@ class DocumentationController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Article created successfully.',
-            'data'    => $article,
+            'data'    => new DocumentationArticleResource($article->load(['category', 'author'])),
         ], Response::HTTP_CREATED);
     }
 
@@ -161,7 +163,7 @@ class DocumentationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $article->load(['category:id,title_en,slug', 'author:id,name']),
+            'data'    => new DocumentationArticleResource($article->load(['category:id,title_en,slug', 'author:id,name'])),
         ]);
     }
 
@@ -191,7 +193,7 @@ class DocumentationController extends Controller
             oldValues:    $old,
         );
 
-        return response()->json(['success' => true, 'data' => $updated]);
+        return response()->json(['success' => true, 'data' => new DocumentationArticleResource($updated->load(['category', 'author']))]);
     }
 
     public function destroyArticle(DocumentationArticle $article): JsonResponse

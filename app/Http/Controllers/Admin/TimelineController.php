@@ -7,6 +7,7 @@ use App\Domains\Content\Actions\UpdateTimelineEntryAction;
 use App\Domains\Content\Models\TimelineEntry;
 use App\Domains\System\Services\AuditService;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Admin\TimelineResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -28,7 +29,7 @@ class TimelineController extends Controller
             ->ordered()
             ->get();
 
-        return response()->json(['success' => true, 'data' => $entries]);
+        return response()->json(['success' => true, 'data' => TimelineResource::collection($entries)]);
     }
 
     public function store(Request $request): JsonResponse
@@ -49,7 +50,7 @@ class TimelineController extends Controller
 
         $entry = $this->createEntry->execute($validated);
 
-        return response()->json(['success' => true, 'data' => $entry], Response::HTTP_CREATED);
+        return response()->json(['success' => true, 'data' => new TimelineResource($entry->load('product'))], Response::HTTP_CREATED);
     }
 
     public function update(Request $request, TimelineEntry $timelineEntry): JsonResponse
@@ -69,7 +70,7 @@ class TimelineController extends Controller
 
         $updated = $this->updateEntry->execute($timelineEntry, $validated);
 
-        return response()->json(['success' => true, 'data' => $updated]);
+        return response()->json(['success' => true, 'data' => new TimelineResource($updated->load('product'))]);
     }
 
     public function destroy(TimelineEntry $timelineEntry): JsonResponse

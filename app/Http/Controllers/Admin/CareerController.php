@@ -7,6 +7,7 @@ use App\Domains\Content\Actions\UpdateCareerAction;
 use App\Domains\Content\Models\Career;
 use App\Domains\System\Services\AuditService;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Admin\CareerResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -24,14 +25,15 @@ class CareerController extends Controller
     {
         $this->authorize('manage_careers');
 
-        $careers = Career::when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
+        $careers = Career::with('creator')
+            ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
             ->when($request->query('department'), fn ($q, $d) => $q->byDepartment($d))
             ->ordered()
             ->paginate($request->query('per_page', 15));
 
         return response()->json([
             'success' => true,
-            'data'    => $careers->items(),
+            'data'    => CareerResource::collection($careers->items()),
             'meta'    => ['current_page' => $careers->currentPage(), 'last_page' => $careers->lastPage(), 'total' => $careers->total()],
         ]);
     }
@@ -60,14 +62,14 @@ class CareerController extends Controller
         $career = $this->createCareer->execute($validated);
         $this->auditService->logModelChange('career.created', $career);
 
-        return response()->json(['success' => true, 'data' => $career], Response::HTTP_CREATED);
+        return response()->json(['success' => true, 'data' => new CareerResource($career)], Response::HTTP_CREATED);
     }
 
     public function show(Career $career): JsonResponse
     {
         $this->authorize('manage_careers');
 
-        return response()->json(['success' => true, 'data' => $career]);
+        return response()->json(['success' => true, 'data' => new CareerResource($career->load('creator'))]);
     }
 
     public function update(Request $request, Career $career): JsonResponse
@@ -92,7 +94,7 @@ class CareerController extends Controller
         $updated = $this->updateCareer->execute($career, $validated);
         $this->auditService->logModelChange('career.updated', $updated);
 
-        return response()->json(['success' => true, 'data' => $updated]);
+        return response()->json(['success' => true, 'data' => new CareerResource($updated)]);
     }
 
     public function destroy(Career $career): JsonResponse

@@ -6,6 +6,7 @@ use App\Domains\Product\Models\Product;
 use App\Domains\Product\Models\ProductRelease;
 use App\Domains\System\Services\AuditService;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Admin\ReleaseResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -32,7 +33,7 @@ class ReleaseController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $releases->items(),
+            'data'    => ReleaseResource::collection($releases->items()),
             'meta'    => [
                 'current_page' => $releases->currentPage(),
                 'last_page'    => $releases->lastPage(),
@@ -75,7 +76,7 @@ class ReleaseController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Release created successfully.',
-            'data'    => $release->load('product:id,name_en,slug'),
+            'data'    => new ReleaseResource($release->load('product:id,name_en,slug')),
         ], Response::HTTP_CREATED);
     }
 
@@ -85,7 +86,7 @@ class ReleaseController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $release->load(['product:id,name_en,slug', 'creator:id,name']),
+            'data'    => new ReleaseResource($release->load(['product:id,name_en,slug', 'creator:id,name'])),
         ]);
     }
 
@@ -107,7 +108,7 @@ class ReleaseController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Release updated successfully.',
-            'data'    => $release->fresh('product:id,name_en,slug'),
+            'data'    => new ReleaseResource($release->fresh('product:id,name_en,slug')),
         ]);
     }
 
