@@ -24,6 +24,9 @@ class ReleaseController extends Controller
         $this->authorize('manage_products');
 
         $releases = ProductRelease::with('product:id,name_en,slug')
+            ->when(! Auth::user()->isSuperAdmin(), fn ($q) =>
+                $q->whereIn('product_id', Auth::user()->products()->pluck('products.id'))
+            )
             ->when($request->query('product_id'), fn ($q, $id) => $q->where('product_id', $id))
             ->when($request->query('published'), fn ($q, $p) =>
                 $p === 'true' ? $q->published() : $q->where('is_published', false)
@@ -60,6 +63,8 @@ class ReleaseController extends Controller
             'is_published'     => ['sometimes', 'boolean'],
         ]);
 
+        abort_unless(Auth::user()->canAccessProduct($validated['product_id']), 403, 'You do not have access to this product.');
+
         // Prevent duplicate version for same product
         $exists = ProductRelease::where('product_id', $validated['product_id'])
             ->where('version', $validated['version'])
@@ -83,6 +88,7 @@ class ReleaseController extends Controller
     public function show(ProductRelease $release): JsonResponse
     {
         $this->authorize('manage_products');
+        abort_unless(Auth::user()->canAccessProduct($release->product_id), 403, 'You do not have access to this product.');
 
         return response()->json([
             'success' => true,
@@ -93,6 +99,7 @@ class ReleaseController extends Controller
     public function update(Request $request, ProductRelease $release): JsonResponse
     {
         $this->authorize('manage_products');
+        abort_unless(Auth::user()->canAccessProduct($release->product_id), 403, 'You do not have access to this product.');
 
         $validated = $request->validate([
             'release_notes_en' => ['sometimes', 'string'],
@@ -115,6 +122,7 @@ class ReleaseController extends Controller
     public function destroy(ProductRelease $release): JsonResponse
     {
         $this->authorize('manage_products');
+        abort_unless(Auth::user()->canAccessProduct($release->product_id), 403, 'You do not have access to this product.');
 
         // Prevent deletion of published releases
         if ($release->is_published) {

@@ -15,6 +15,7 @@ use App\Http\Resources\Admin\ProductResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
@@ -33,6 +34,13 @@ class ProductController extends Controller
 
         $products = Product::with(['coverImage', 'creator'])
             ->ordered()
+            // Product-scoping (see User::canAccessProduct docblock): a
+            // scoped admin shouldn't even see products outside their
+            // access in the list — filtering here, not just blocking
+            // show/update/destroy below, closes that info-leak.
+            ->when(! Auth::user()->isSuperAdmin(), fn ($q) =>
+                $q->whereIn('id', Auth::user()->products()->pluck('products.id'))
+            )
             ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
             ->when($request->query('search'), fn ($q, $search) =>
                 $q->where('name_en', 'ilike', "%{$search}%")
@@ -77,6 +85,7 @@ class ProductController extends Controller
     public function show(Product $product): JsonResponse
     {
         $this->authorize('manage_products');
+        abort_unless(Auth::user()->canAccessProduct($product), 403, 'You do not have access to this product.');
 
         return response()->json([
             'success' => true,
@@ -92,6 +101,7 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
         $this->authorize('manage_products');
+        abort_unless(Auth::user()->canAccessProduct($product), 403, 'You do not have access to this product.');
 
         $updated = $this->updateProduct->execute(
             $product,
@@ -111,6 +121,7 @@ class ProductController extends Controller
     public function destroy(Product $product): JsonResponse
     {
         $this->authorize('manage_products');
+        abort_unless(Auth::user()->canAccessProduct($product), 403, 'You do not have access to this product.');
 
         $this->deleteProduct->execute($product);
 

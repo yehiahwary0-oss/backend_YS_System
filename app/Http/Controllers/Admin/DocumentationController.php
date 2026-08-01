@@ -15,6 +15,7 @@ use App\Http\Resources\Admin\DocumentationCategoryResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 
 class DocumentationController extends Controller
 {
@@ -34,6 +35,16 @@ class DocumentationController extends Controller
 
         $categories = DocumentationCategory::with(['product:id,name_en,slug', 'parent:id,title_en'])
             ->roots()
+            // A category with no product is company-wide docs (e.g.
+            // general "Getting Started") — visible to anyone with
+            // manage_documentation. A category tied to a product is
+            // scoped like everything else product-related.
+            ->when(! Auth::user()->isSuperAdmin(), fn ($q) =>
+                $q->where(fn ($q2) =>
+                    $q2->whereNull('product_id')
+                       ->orWhereIn('product_id', Auth::user()->products()->pluck('products.id'))
+                )
+            )
             ->when($request->query('product_id'), fn ($q, $id) => $q->forProduct($id))
             ->ordered()
             ->get();
@@ -54,6 +65,10 @@ class DocumentationController extends Controller
             'sort_order' => ['sometimes', 'integer', 'min:0'],
         ]);
 
+        if (isset($validated['product_id'])) {
+            abort_unless(Auth::user()->canAccessProduct($validated['product_id']), 403, 'You do not have access to this product.');
+        }
+
         $category = $this->createCategory->execute($validated);
 
         $this->auditService->logModelChange('documentation_category.created', $category);
@@ -68,6 +83,9 @@ class DocumentationController extends Controller
     public function updateCategory(Request $request, DocumentationCategory $category): JsonResponse
     {
         $this->authorize('manage_documentation');
+        if ($category->product_id) {
+            abort_unless(Auth::user()->canAccessProduct($category->product_id), 403, 'You do not have access to this product.');
+        }
 
         $validated = $request->validate([
             'slug'       => ['sometimes', 'string', 'max:100', 'alpha_dash', "unique:documentation_categories,slug,{$category->id}"],
@@ -92,6 +110,9 @@ class DocumentationController extends Controller
     public function destroyCategory(DocumentationCategory $category): JsonResponse
     {
         $this->authorize('manage_documentation');
+        if ($category->product_id) {
+            abort_unless(Auth::user()->canAccessProduct($category->product_id), 403, 'You do not have access to this product.');
+        }
 
         // Prevent deletion if category has articles
         if ($category->articles()->exists()) {
@@ -111,6 +132,12 @@ class DocumentationController extends Controller
         $this->authorize('manage_documentation');
 
         $articles = DocumentationArticle::with(['category:id,title_en,slug', 'author:id,name'])
+            ->when(! Auth::user()->isSuperAdmin(), fn ($q) =>
+                $q->whereHas('category', fn ($q2) =>
+                    $q2->whereNull('product_id')
+                       ->orWhereIn('product_id', Auth::user()->products()->pluck('products.id'))
+                )
+            )
             ->when($request->query('category_id'), fn ($q, $id) => $q->where('category_id', $id))
             ->when($request->query('published'), fn ($q, $p) => $p === 'true' ? $q->published() : $q)
             ->when($request->query('search'), fn ($q, $s) =>
@@ -146,6 +173,11 @@ class DocumentationController extends Controller
             'sort_order'   => ['sometimes', 'integer', 'min:0'],
         ]);
 
+        $targetCategory = DocumentationCategory::findOrFail($validated['category_id']);
+        if ($targetCategory->product_id) {
+            abort_unless(Auth::user()->canAccessProduct($targetCategory->product_id), 403, 'You do not have access to this product.');
+        }
+
         $article = $this->createArticle->execute($validated);
 
         $this->auditService->logModelChange('documentation_article.created', $article);
@@ -160,6 +192,9 @@ class DocumentationController extends Controller
     public function showArticle(DocumentationArticle $article): JsonResponse
     {
         $this->authorize('manage_documentation');
+        if ($article->category->product_id) {
+            abort_unless(Auth::user()->canAccessProduct($article->category->product_id), 403, 'You do not have access to this product.');
+        }
 
         return response()->json([
             'success' => true,
@@ -170,6 +205,9 @@ class DocumentationController extends Controller
     public function updateArticle(Request $request, DocumentationArticle $article): JsonResponse
     {
         $this->authorize('manage_documentation');
+        if ($article->category->product_id) {
+            abort_unless(Auth::user()->canAccessProduct($article->category->product_id), 403, 'You do not have access to this product.');
+        }
 
         $validated = $request->validate([
             'slug'         => ['sometimes', 'string', 'max:150', "unique:documentation_articles,slug,{$article->id}"],
@@ -184,6 +222,14 @@ class DocumentationController extends Controller
         ]);
 
         $old = $article->only(['title_en', 'is_published']);
+
+        if (isset($validated['category_id']) && $validated['category_id'] !== $article->category_id) {
+            $newCategory = DocumentationCategory::findOrFail($validated['category_id']);
+            if ($newCategory->product_id) {
+                abort_unless(Auth::user()->canAccessProduct($newCategory->product_id), 403, 'You do not have access to the target category\'s product.');
+            }
+        }
+
         $updated = $this->updateArticle->execute($article, $validated);
 
         $this->auditService->log(
@@ -199,6 +245,9 @@ class DocumentationController extends Controller
     public function destroyArticle(DocumentationArticle $article): JsonResponse
     {
         $this->authorize('manage_documentation');
+        if ($article->category->product_id) {
+            abort_unless(Auth::user()->canAccessProduct($article->category->product_id), 403, 'You do not have access to this product.');
+        }
 
         $this->auditService->logModelChange('documentation_article.deleted', $article);
         $article->delete();

@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReleaseController;
 use App\Http\Controllers\Admin\RoadmapController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StaticPageController;
 use App\Http\Controllers\Admin\TimelineController;
@@ -153,7 +155,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'active'])->
 
     // Users
     Route::apiResource('users', UserController::class);
-    Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+    Route::apiResource('roles', RoleController::class);
+
+    // Billing
+    Route::apiResource('customers', CustomerController::class);
+    Route::apiResource('subscriptions', SubscriptionController::class);
 
     // Settings
     Route::get('settings',           [SettingController::class, 'index'])->name('settings.index');
