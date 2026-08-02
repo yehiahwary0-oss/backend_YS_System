@@ -155,6 +155,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'active'])->
 
     // Users
     Route::apiResource('users', UserController::class);
+    Route::put('users/{user}/products', [UserController::class, 'syncProducts'])->name('users.products.sync');
     Route::apiResource('roles', RoleController::class);
 
     // Billing
